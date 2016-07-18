@@ -15,12 +15,9 @@
 #for num in numbers:
 #	print num
 
-#from sys import argv
+from sys import argv
 
-#script, number_input = argv
-
-
-#numbers = []
+script, number_rise = argv
 
 numbers = []
 def number_count(x):
@@ -30,7 +27,7 @@ def number_count(x):
 		print "At the top i is %d" % i
 		numbers.append(i)
 
-		i = i + 1
+		i = i + int(number_rise)
 		print "Numbers now: ", numbers
 		print "At the bottom i is %d" % i
 
