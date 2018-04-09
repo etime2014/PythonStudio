@@ -13,6 +13,7 @@
 #administrator password *
 #login user test *
 #事前準備のコンフィグ設定後、saveをお忘れなく
+#Lan3 IPと本社ルートはSSH維持のため、自動削除できない
 
 import paramiko
 import time
@@ -25,21 +26,36 @@ config.read('./SetRTX1200_AddConfig_parameter.ini')
 ssh_ip = config.get('General', 'ip_lan3')
 username = config.get('General', 'username')
 password = config.get('General', 'password')
-adminpw = getpass.getpass("administrator PW for %s: " % ssh_ip)
+timeout = 10
+error_message = None
 
 ssh_client = paramiko.SSHClient()
 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh_client.connect(hostname=ssh_ip,username=username,password=password)
 
-print "Sucessfully login to ", ssh_ip
+
+try :
+    ssh_client.connect(hostname=ssh_ip,username=username,password=password,timeout=timeout)
+except paramiko.ssh_exception.AuthenticationException, e:
+    print "==========================ルーターアカウント情報間違っているよ！=========================="
+    raise
+    ssh_client.close()
+except Exception as e:
+    print(e)
+    ssh_client.close()
+else:
+    print "Sucessfully login to ", ssh_ip
+
 
 command = ssh_client.invoke_shell()
+#adminpw = getpass.getpass("administrator PW for %s: " % ssh_ip)
+adminpw = config.get('General', 'admin_pw')
 
 command.send("administrator\n")
 time.sleep(0.5)
 command.send("%s\n" % adminpw)
 command.send("login timer 21474836\n")
 time.sleep(0.5)
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 command.send("ip filter source-route on\n")
 command.send("ip filter directed-broadcast on\n")
 command.send("pp select 1\n")
@@ -66,6 +82,7 @@ command.send("ip filter 1013 reject * * udp,tcp * netbios_ns-netbios_ssn\n")
 command.send("ip filter 1014 reject * * udp,tcp 445 *\n")
 command.send("ip filter 1015 reject * * udp,tcp * 445\n")
 time.sleep(1)
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 command.send("ip filter 1040 pass * * udp * 500\n")
 command.send("ip filter 1041 pass * * esp\n")
 command.send("ip filter 2000 reject * *\n")
@@ -80,7 +97,7 @@ command.send("dhcp server rfc2131 compliant except remain-silent\n")
 
 command.send("dns private address spoof on\n")
 time.sleep(0.5)
-
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 #ここからカスタマイズエリア,parameter.iniを使う
 #command.send("console prompt paqua-wakayama\n")
 command.send('console prompt ' + config.get('General', 'console_prompt') + '\n')
@@ -110,6 +127,7 @@ command.send('tunnel enable ' + config.get('Tunnel', 'tunnel_num') + '\n')
 #command.send("tunnel select none\n")
 command.send('tunnel select none' + '\n')
 time.sleep(0.5)
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 #command.send("dhcp scope 1 172.25.32.21-172.25.32.28/24\n")
 command.send('dhcp scope ' + config.get('DHCP', 'scope_num')  + ' ' + config.get('DHCP', 'scope_range') + '\n')
 #command.send("dhcp scope option 1 dns=172.31.102.210,172.31.102.143\n")
@@ -122,21 +140,23 @@ time.sleep(0.5)
 #command.send("ip route default gateway pp 1 filter 1040 1041 gateway tunnel 3\n")
 command.send('ip route default gateway pp ' + config.get('PP', 'pp_num') + ' filter 1040 1041 gateway tunnel ' + config.get('Tunnel', 'tunnel_num') + '\n')
 time.sleep(2)
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 #command.send("no ip route 192.168.0.0/24 gateway 192.168.0.5\n")
 #command.send('no ip route ' + config.get('General', 'default_route_intra') + '\n')
 #command.send("no ip lan3 address 192.168.0.12/24\n")
 #command.send('no ip lan3 address ' + config.get('General', 'ip_lan3') + config.get('General', 'ip_lan3_prefix')  + '\n')
+#SSH維持のため、自動削除できませんでした
 command.send('save' + '\n')
 time.sleep(1.5)
 output = command.recv(65535)
-#print output
-f = open('out.log','w')
+Log_Path = config.get('General', 'log_path')
+f = open(Log_Path,'w')
 f.write(output)
-
+print Log_Path + "が保存されました。"
 print "PP内local address未設定!!!"
-print "ip pp address [IP Address/Prefix]"
+print "ip pp address [IP Address/Prefix]を使って設定してください。"
 print "トンネル内ipsec ike local address未設定!!!"
-print "ipsec ike local address [TunnelNum] [IP Address]"
+print "ipsec ike local address [TunnelNum] [IP Address]を使って設定してください。"
 
 f.close()
 ssh_client.close()
