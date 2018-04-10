@@ -110,7 +110,7 @@ time.sleep(0.5)
 #nat descriptor static 12 1 172.25.100.179=172.25.30.50 1
 command.send('no nat descriptor static ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_teletime') + '=' + config.get('General', 'ip_teletime_branch') + ' ' + config.get('HQ-Router', 'nat_teletime_device_num') + '\n')
 #nat descriptor type 13 nat
-command.send('no nat descriptor type ' + config.get('HQ-Router', 'nat_printer_device_num') + ' nat' + '\n') 
+command.send('no nat descriptor type ' + config.get('HQ-Router', 'nat_printer_type_num') + ' nat' + '\n') 
 #nat descriptor address outer 13 172.25.100.180
 command.send('no nat descriptor address outer ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_printer') + '\n')
 #nat descriptor address inner 13 172.25.30.100
