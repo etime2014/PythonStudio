@@ -61,63 +61,63 @@ check = open(Log_Before_Path)
 tmpdata = check.read()
 tunnel_select = 'tunnel select ' + config.get('Tunnel', 'tunnel_num')
 router = tmpdata.find(tunnel_select)
-if router == -1:
-    print "対象トンネル見つかりませんでした、作業中断します。"
+if router != -1:
+    print "対象トンネルすでに存在するので、作業中断します。"
     check.close()
     ssh_client.close()
 else:
-    print "対象トンネル確認できました、作業に入ります......"
+    print "対象トンネルまだ利用されていないので、作業に入ります......"
     check.close()
 
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 #ip route 172.25.30.0/24 gateway tunnel 4
-command.send('no ip route ' + config.get('General', 'ip_network') + config.get('General', 'ip_lan1_prefix') + ' gateway tunnel ' + config.get('Tunnel', 'tunnel_num') + '\n')
+command.send('ip route ' + config.get('General', 'ip_network') + config.get('General', 'ip_lan1_prefix') + ' gateway tunnel ' + config.get('Tunnel', 'tunnel_num') + '\n')
 #tunnel select 4
 command.send('tunnel select ' + config.get('Tunnel', 'tunnel_num') + '\n')
 # ipsec tunnel 104
-command.send('no ipsec tunnel ' + config.get('Tunnel', 'ipsec_tunnel_num') + '\n')
+command.send('ipsec tunnel ' + config.get('Tunnel', 'ipsec_tunnel_num') + '\n')
 #  ipsec sa policy 104 4 esp 3des-cbc sha-hmac
-command.send('no ipsec sa policy ' + config.get('Tunnel', 'ipsec_tunnel_num') + ' ' + config.get('Tunnel', 'tunnel_num') + ' esp 3des-cbc sha-hmac' + '\n')
+command.send('ipsec sa policy ' + config.get('Tunnel', 'ipsec_tunnel_num') + ' ' + config.get('Tunnel', 'tunnel_num') + ' esp 3des-cbc sha-hmac' + '\n')
 #  ipsec ike keepalive use 4 on icmp-echo 172.25.30.1 10 5
-command.send('no ipsec ike keepalive use ' + config.get('Tunnel', 'tunnel_num') + ' on icmp-echo ' + config.get('General', 'ip_lan1') + ' 10 5' + '\n')
+command.send('ipsec ike keepalive use ' + config.get('Tunnel', 'tunnel_num') + ' on icmp-echo ' + config.get('General', 'ip_lan1') + ' 10 5' + '\n')
 #  ipsec ike local address 4 121.1.133.74
-command.send('no ipsec ike local address ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Tunnel', 'hq_public_address') + '\n')
+command.send('ipsec ike local address ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Tunnel', 'hq_public_address') + '\n')
 time.sleep(0.5)
 #  ipsec ike pre-shared-key 4 text Gaiasystem8811
-command.send('no ipsec ike pre-shared-key ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Pre-shared-key', 'type') + ' ' + config.get('Pre-shared-key', 'content') + '\n')
+command.send('ipsec ike pre-shared-key ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Pre-shared-key', 'type') + ' ' + config.get('Pre-shared-key', 'content') + '\n')
 #  ipsec ike remote address 4 183.77.252.91
-command.send('no ipsec ike remote address ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Tunnel', 'branch_public_address') + '\n')
+command.send('ipsec ike remote address ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Tunnel', 'branch_public_address') + '\n')
 # tunnel enable 4
-command.send('no tunnel enable ' + config.get('Tunnel', 'tunnel_num') + '\n') 
+command.send('tunnel enable ' + config.get('Tunnel', 'tunnel_num') + '\n') 
 #command.send("tunnel select none\n")
 command.send('tunnel select none' + '\n')
 # nat descriptor type 11 nat
-command.send('no nat descriptor type ' + config.get('HQ-Router', 'nat_router_type_num') + ' nat' + '\n') 
+command.send('nat descriptor type ' + config.get('HQ-Router', 'nat_router_type_num') + ' nat' + '\n') 
 #nat descriptor address outer 11 172.25.100.151
-command.send('no nat descriptor address outer ' + config.get('HQ-Router', 'nat_router_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_router') + '\n')
+command.send('nat descriptor address outer ' + config.get('HQ-Router', 'nat_router_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_router') + '\n')
 time.sleep(0.5)
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 #nat descriptor address inner 11 172.25.30.1
-command.send('no nat descriptor address inner ' + config.get('HQ-Router', 'nat_router_type_num') + ' ' + config.get('General', 'ip_lan1') + '\n')
+command.send('nat descriptor address inner ' + config.get('HQ-Router', 'nat_router_type_num') + ' ' + config.get('General', 'ip_lan1') + '\n')
 #nat descriptor static 11 1 172.25.100.151=172.25.30.1 28
-command.send('no nat descriptor static ' + config.get('HQ-Router', 'nat_router_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_router') + '=' + config.get('General', 'ip_lan1') + ' ' + config.get('HQ-Router', 'nat_router_device_num') + '\n')
+command.send('nat descriptor static ' + config.get('HQ-Router', 'nat_router_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_router') + '=' + config.get('General', 'ip_lan1') + ' ' + config.get('HQ-Router', 'nat_router_device_num') + '\n')
 #nat descriptor type 12 nat
-command.send('no nat descriptor type ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' nat' + '\n') 
+command.send('nat descriptor type ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' nat' + '\n') 
 #nat descriptor address outer 12 172.25.100.179
-command.send('no nat descriptor address outer ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_teletime') + '\n')
+command.send('nat descriptor address outer ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_teletime') + '\n')
 #nat descriptor address inner 12 172.25.30.50
-command.send('no nat descriptor address inner ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('General', 'ip_teletime_branch') + '\n')
-time.sleep(0.5)
+command.send('nat descriptor address inner ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('General', 'ip_teletime_branch') + '\n')
 #nat descriptor static 12 1 172.25.100.179=172.25.30.50 1
-command.send('no nat descriptor static ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_teletime') + '=' + config.get('General', 'ip_teletime_branch') + ' ' + config.get('HQ-Router', 'nat_teletime_device_num') + '\n')
+command.send('nat descriptor static ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_teletime') + '=' + config.get('General', 'ip_teletime_branch') + ' ' + config.get('HQ-Router', 'nat_teletime_device_num') + '\n')
+time.sleep(0.5)
 #nat descriptor type 13 nat
-command.send('no nat descriptor type ' + config.get('HQ-Router', 'nat_printer_type_num') + ' nat' + '\n') 
+command.send('nat descriptor type ' + config.get('HQ-Router', 'nat_printer_type_num') + ' nat' + '\n') 
 #nat descriptor address outer 13 172.25.100.180
-command.send('no nat descriptor address outer ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_printer') + '\n')
+command.send('nat descriptor address outer ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_printer') + '\n')
 #nat descriptor address inner 13 172.25.30.100
-command.send('no nat descriptor address inner ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('General', 'ip_printer_branch') + '\n')
+command.send('nat descriptor address inner ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('General', 'ip_printer_branch') + '\n')
 #nat descriptor static 13 1 172.25.100.180=172.25.30.100 1
-command.send('no nat descriptor static ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_printer') + '=' + config.get('General', 'ip_printer_branch') + ' ' + config.get('HQ-Router', 'nat_printer_device_num') + '\n')
+command.send('nat descriptor static ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_printer') + '=' + config.get('General', 'ip_printer_branch') + ' ' + config.get('HQ-Router', 'nat_printer_device_num') + '\n')
 time.sleep(0.5)
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
@@ -125,7 +125,7 @@ command.send('save' + '\n')
 time.sleep(1.5)
 output = command.recv(65535)
 #今まで入力した内容を受信
-Log_Path = config.get('HQ-Router', 'log_del_path')
+Log_Path = config.get('HQ-Router', 'log_add_path')
 f = open(Log_Path,'w')
 f.write(output)
 #指定の場所にログとして保存
