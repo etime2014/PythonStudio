@@ -7,7 +7,7 @@ import getpass
 import ConfigParser
 
 config = ConfigParser.ConfigParser()
-config.read('./SetRTX1200_AddConfig_parameter.ini')
+config.read('./SetRTX1200_Config_parameter.ini')
 #パラメータファイルを読み込む
 
 ssh_ip = config.get('General', 'ip_lan3')
@@ -39,7 +39,6 @@ time.sleep(0.5)
 command.send("%s\n" % adminpw)
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 buff = ''
-resp = ''
 command.send('show config \n')
 time.sleep(3)
 try:
@@ -48,16 +47,17 @@ try:
         time.sleep(3)
         buff = command.recv(65535)
         if not buff.endswith('#'):
-            f = open('config_router','w')
-            f.write(buff)
-            f.close()
+            Log_Before_Path = config.get('HQ-Router', 'log_before')
+            b = open(Log_Before_Path,'w')
+            b.write(buff)
+            b.close()
             break
 except Exception, e:
     print "error info:"+str(e)
 print "本社ルータ作業前configが保存されました。"
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 print "config解析作業に入ります......"
-check = open('config_router')
+check = open(Log_Before_Path)
 tmpdata = check.read()
 tunnel_select = 'tunnel select ' + config.get('Tunnel', 'tunnel_num')
 router = tmpdata.find(tunnel_select)
@@ -67,8 +67,7 @@ if router == -1:
     ssh_client.close()
 else:
     print "対象トンネル確認できました、削除作業に入ります......"
-
-check.close()
+    check.close()
 
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 #ip route 172.25.30.0/24 gateway tunnel 4
@@ -128,11 +127,11 @@ Log_Path = config.get('HQ-Router', 'del_log_path')
 f = open(Log_Path,'w')
 f.write(output)
 #指定の場所にログとして保存
-
+print output
 print "-------------------------------------------------------------------------------------"
 print Log_Path + "が保存されました。"
 print "-------------------------------------------------------------------------------------"
 
-
 f.close()
 ssh_client.close()
+#開けっ放しにしないよう

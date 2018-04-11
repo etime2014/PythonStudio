@@ -12,6 +12,7 @@
 #ip route 192.168.0.0/24 gateway 192.168.0.5
 #administrator password *
 #login user test *
+#login password *
 #事前準備のコンフィグ設定後、saveをお忘れなく
 #Lan3 IPと本社ルートはSSH維持のため、自動削除できない
 
@@ -21,25 +22,24 @@ import getpass
 import ConfigParser
 
 config = ConfigParser.ConfigParser()
-config.read('./SetRTX1200_AddConfig_parameter.ini')
+config.read('./SetRTX1200_Config_parameter.ini')
+#パラメータファイルを読み込む
 
 ssh_ip = config.get('General', 'ip_lan3')
 username = config.get('General', 'username')
 password = config.get('General', 'password')
-timeout = 10
-error_message = None
 
 ssh_client = paramiko.SSHClient()
 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
 
 try :
-    ssh_client.connect(hostname=ssh_ip,username=username,password=password,timeout=timeout)
+    ssh_client.connect(hostname=ssh_ip,username=username,password=password)
 except paramiko.ssh_exception.AuthenticationException, e:
     print "==========================ルーターアカウント情報間違っているよ！=========================="
     raise
     ssh_client.close()
-except Exception as e:
+except Exception, e:
     print(e)
     ssh_client.close()
 else:
@@ -47,15 +47,16 @@ else:
 
 
 command = ssh_client.invoke_shell()
+command.settimeout(10)
 #adminpw = getpass.getpass("administrator PW for %s: " % ssh_ip)
 adminpw = config.get('General', 'admin_pw')
 
 command.send("administrator\n")
 time.sleep(0.5)
 command.send("%s\n" % adminpw)
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 command.send("login timer 21474836\n")
 time.sleep(0.5)
-print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 command.send("ip filter source-route on\n")
 command.send("ip filter directed-broadcast on\n")
 command.send("pp select 1\n")
@@ -116,12 +117,12 @@ command.send('ipsec tunnel ' + config.get('Tunnel', 'ipsec_tunnel_num') + '\n')
 #command.send("ipsec sa policy 103 3 esp 3des-cbc sha-hmac\n")
 command.send('ipsec sa policy ' + config.get('Tunnel', 'ipsec_tunnel_num') + ' ' + config.get('Tunnel', 'tunnel_num') + ' esp 3des-cbc sha-hmac' + '\n')
 #command.send("ipsec ike keepalive use 3 on icmp-echo 172.25.100.254 10 5\n")
-command.send('ipsec ike keepalive use ' + config.get('Tunnel', 'tunnel_num') + ' on icmp-echo ' + config.get('General', 'ip_router_hq') + ' 10 5' + '\n')
+command.send('ipsec ike keepalive use ' + config.get('Tunnel', 'tunnel_num') + ' on icmp-echo ' + config.get('HQ-Router', 'ip_router_hq') + ' 10 5' + '\n')
 time.sleep(0.5)
 #command.send("ipsec ike pre-shared-key 3 text Gaiasystem8811\n")
 command.send('ipsec ike pre-shared-key ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Pre-shared-key', 'type') + ' ' + config.get('Pre-shared-key', 'content') + '\n')
 #command.send("ipsec ike remote address 3 121.1.133.74\n")
-command.send('ipsec ike remote address ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Tunnel', 'remote_address') + '\n')
+command.send('ipsec ike remote address ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Tunnel', 'hq_public_address') + '\n')
 #command.send("tunnel enable 3\n")
 command.send('tunnel enable ' + config.get('Tunnel', 'tunnel_num') + '\n')
 #command.send("tunnel select none\n")
@@ -149,14 +150,22 @@ print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 command.send('save' + '\n')
 time.sleep(1.5)
 output = command.recv(65535)
+#今まで入力した内容を受信
 Log_Path = config.get('General', 'log_path')
 f = open(Log_Path,'w')
 f.write(output)
+#指定の場所にログとして保存
+print output
+print "-------------------------------------------------------------------------------------"
 print Log_Path + "が保存されました。"
+print "-------------------------------------------------------------------------------------"
 print "PP内local address未設定!!!"
-print "ip pp address [IP Address/Prefix]を使って設定してください。"
+print "ip pp address [IP Address/Prefix] を使って設定してください。"
+print "-------------------------------------------------------------------------------------"
 print "トンネル内ipsec ike local address未設定!!!"
-print "ipsec ike local address [TunnelNum] [IP Address]を使って設定してください。"
+print "ipsec ike local address [TunnelNum] [IP Address] を使って設定してください。"
+print "-------------------------------------------------------------------------------------"
 
 f.close()
 ssh_client.close()
+#開けっ放しにしないよう

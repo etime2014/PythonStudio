@@ -22,7 +22,7 @@ import getpass
 import ConfigParser
 
 config = ConfigParser.ConfigParser()
-config.read('./SetRTX1200_AddConfig_parameter.ini')
+config.read('./SetRTX1200_Config_parameter.ini')
 #パラメータファイルを読み込む
 
 ssh_ip = config.get('General', 'ip_lan3')
