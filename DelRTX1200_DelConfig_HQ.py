@@ -1,10 +1,7 @@
 #!/usr/bin/env python
 # -*- coding:utf-8 -*-
 
-import paramiko
-import time
-import getpass
-import ConfigParser
+import paramiko,time,getpass,ConfigParser,datetime
 
 config = ConfigParser.ConfigParser()
 config.read('./SetRTX1200_Config_parameter_test.ini')
@@ -41,13 +38,14 @@ print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 buff = ''
 command.send('show config \n')
 time.sleep(3)
+d = datetime.datetime.today()
 try:
     while not buff.endswith('---つづく---'):
-        command.send(' \n')
+        command.send('\s\n')
         time.sleep(3)
         buff = command.recv(65535)
         if not buff.endswith('#'):
-            Log_Before_Path = config.get('HQ-Router', 'log_before_path')
+            Log_Before_Path = config.get('HQ-Router', 'log_before_path') + d.strftime("-%Y-%m-%d-%H:%M:%S") + '.log'
             b = open(Log_Before_Path,'w')
             b.write(buff)
             b.close()
@@ -55,8 +53,9 @@ try:
 except Exception, e:
     print "error info:"+str(e)
 print "本社ルータ作業前config" + Log_Before_Path + "が保存されました。"
-print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 print "config解析作業に入ります......"
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+time.sleep(2)
 check = open(Log_Before_Path)
 tmpdata = check.read()
 tunnel_select = 'tunnel select ' + config.get('Tunnel', 'tunnel_num')
@@ -67,6 +66,7 @@ if router == -1:
     ssh_client.close()
 else:
     print "対象トンネル確認できました、作業に入ります......"
+    time.sleep(2)
     check.close()
 
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
@@ -89,6 +89,7 @@ command.send('no ipsec ike pre-shared-key ' + config.get('Tunnel', 'tunnel_num')
 command.send('no ipsec ike remote address ' + config.get('Tunnel', 'tunnel_num') + ' ' + config.get('Tunnel', 'branch_public_address') + '\n')
 # tunnel enable 4
 command.send('no tunnel enable ' + config.get('Tunnel', 'tunnel_num') + '\n') 
+time.sleep(0.5)
 #command.send("tunnel select none\n")
 command.send('tunnel select none' + '\n')
 # nat descriptor type 11 nat
@@ -101,17 +102,20 @@ print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 command.send('no nat descriptor address inner ' + config.get('HQ-Router', 'nat_router_type_num') + ' ' + config.get('General', 'ip_lan1') + '\n')
 #nat descriptor static 11 1 172.25.100.151=172.25.30.1 28
 command.send('no nat descriptor static ' + config.get('HQ-Router', 'nat_router_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_router') + '=' + config.get('General', 'ip_lan1') + ' ' + config.get('HQ-Router', 'nat_router_device_num') + '\n')
+time.sleep(0.5)
 #nat descriptor type 12 nat
 command.send('no nat descriptor type ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' nat' + '\n') 
 #nat descriptor address outer 12 172.25.100.179
 command.send('no nat descriptor address outer ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_teletime') + '\n')
+time.sleep(0.5)
 #nat descriptor address inner 12 172.25.30.50
 command.send('no nat descriptor address inner ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('General', 'ip_teletime_branch') + '\n')
-time.sleep(0.5)
 #nat descriptor static 12 1 172.25.100.179=172.25.30.50 1
+time.sleep(0.5)
 command.send('no nat descriptor static ' + config.get('HQ-Router', 'nat_teletime_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_teletime') + '=' + config.get('General', 'ip_teletime_branch') + ' ' + config.get('HQ-Router', 'nat_teletime_device_num') + '\n')
 #nat descriptor type 13 nat
 command.send('no nat descriptor type ' + config.get('HQ-Router', 'nat_printer_type_num') + ' nat' + '\n') 
+time.sleep(0.5)
 #nat descriptor address outer 13 172.25.100.180
 command.send('no nat descriptor address outer ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_printer') + '\n')
 #nat descriptor address inner 13 172.25.30.100
@@ -119,35 +123,47 @@ command.send('no nat descriptor address inner ' + config.get('HQ-Router', 'nat_p
 #nat descriptor static 13 1 172.25.100.180=172.25.30.100 1
 command.send('no nat descriptor static ' + config.get('HQ-Router', 'nat_printer_type_num') + ' ' + config.get('HQ-Router', 'nat_table_num') + ' ' + config.get('HQ-Router', 'ip_gaiaaddress_branch_printer') + '=' + config.get('General', 'ip_printer_branch') + ' ' + config.get('HQ-Router', 'nat_printer_device_num') + '\n')
 time.sleep(0.5)
-print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-
 command.send('save' + '\n')
-time.sleep(1.5)
+time.sleep(2)
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 output = command.recv(65535)
 #今まで入力した内容を受信
-Log_Path = config.get('HQ-Router', 'log_del_path')
-f = open(Log_Path,'w')
-f.write(output)
-#指定の場所にログとして保存
 print output
+#f = open('temp.txt','w')
+#f.write(output)
+#f.close()
+
+#temp = open('temp.txt')
+#lines = temp.readlines()
+#temp.close()
+
+Log_Path = config.get('HQ-Router', 'log_del_path') + d.strftime("-%Y-%m-%d-%H:%M:%S") + '.log'
+dl = open(Log_Path,"w")
+dl.write(output)
+#for line in lines:
+#    if line.find("#") >= 0:
+#        print line[:-1]
+#        dl.write(line[:-1] + '\n')
+dl.close()
+#指定の場所にログとして保存
 print "-------------------------------------------------------------------------------------"
 print Log_Path + "が保存されました。"
 print "-------------------------------------------------------------------------------------"
-f.close()
+#os.remove("./temp.txt")
 
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-buff = ''
+buff_a = ''
 command.send('show config \n')
 time.sleep(3)
 try:
-    while not buff.endswith('---つづく---'):
-        command.send(' \n')
+    while not buff_a.endswith('---つづく---'):
+        command.send('\s\n')
         time.sleep(3)
-        buff = command.recv(65535)
-        if not buff.endswith('#'):
-            Log_After_Path = config.get('HQ-Router', 'log_after_path')
+        buff_a = command.recv(65535)
+        if not buff_a.endswith('#'):
+            Log_After_Path = config.get('HQ-Router', 'log_after_path') + d.strftime("-%Y-%m-%d-%H:%M:%S") + '.log'
             z = open(Log_After_Path,'w')
-            z.write(buff)
+            z.write(buff_a)
             z.close()
             break
 except Exception, e:
