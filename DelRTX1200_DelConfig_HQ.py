@@ -85,14 +85,15 @@ for line in lines:
     if line.startswith("ip lan1 nat descriptor "):
         nat_config = line[:-1]
         nat_list_now = nat_config.replace('ip lan1 nat descriptor ', '')
-
-if nat_list_now:
-    print "既存nat descriptor特定しました、作業に入ります......"
-    time.sleep(1)
-else:
-    print "既存nat descriptor特定できませんでした、作業中断します！"
-    time.sleep(2)
-    ssh_client.close()
+        if nat_list_now:
+            print "既存nat descriptor特定しました、作業に入ります......"
+            time.sleep(1)
+        else:
+            print "既存nat descriptor特定できませんでした、作業中断します！"
+            time.sleep(2)
+            ssh_client.close()
+    else:
+        pass
 
 nat_list_chg_router = nat_list_now.replace(config.get('Variable', 'nat_router_type_num'), '')
 nat_list_chg_teletime = nat_list_chg_router.replace(config.get('Variable', 'nat_teletime_type_num'), '')

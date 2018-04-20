@@ -5,14 +5,14 @@
 #実行するために、python2.X環境が必要
 #ルータ側は事前にSSH設定を済んで、lan3にIPを設定し、SSHリモート可能の状態に設置してください
 #ユーザ情報も手動でコンフィグを入れてください
-#sshd service on
-#sshd host key generate 2048
-#下記IPは例です
-#ip lan3 address 192.168.0.13/24
-#ip route 192.168.0.0/24 gateway 192.168.0.5
+#下記は例です
+#ip lan3 address 192.168.0.19/24
+#ip route 172.31.102.0/24 gateway 192.168.0.5
 #administrator password *
 #login user test *
 #login password *
+#sshd service on
+#sshd host key generate 2048
 #事前準備のコンフィグ設定後、saveをお忘れなく
 #Lan3 IPと本社内ルーティングはSSH維持のため、自動削除できない
 
@@ -56,6 +56,8 @@ command.send("administrator\n")
 time.sleep(0.5)
 command.send("%s\n" % adminpw)
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+print "作業開始デス!!!"
+time.sleep(1)
 command.send("login timer 21474836\n")
 time.sleep(0.5)
 command.send("ip filter source-route on\n")
