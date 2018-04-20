@@ -17,9 +17,11 @@ username = config.get('Variable', 'username')
 #username = config.get('Constant', 'username_hq')
 password = config.get('Constant', 'password')
 #password = config.get('Constant', 'password_hq')
+#SSH資格情報読み込む
 
 ssh_client = paramiko.SSHClient()
 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#未知のSSH-host-keyを自動追加
 
 try :
     ssh_client.connect(hostname=ssh_ip,username=username,password=password)
@@ -32,10 +34,15 @@ except Exception, e:
     ssh_client.close()
 else:
     print "Sucessfully login to ", ssh_ip
+#SSH資格情報チェック
 
 command = ssh_client.invoke_shell()
+#ssh-shell定義
+
 command.settimeout(10)
+
 #adminpw = getpass.getpass("administrator PW for %s: " % ssh_ip)
+#こちらを有効すれば、パラメータファイルからadminpwを読み込むではなく、実行時に毎回adminpwを聞いてくれる
 adminpw = config.get('Constant', 'admin_pw_hq')
 
 command.send("administrator\n")
@@ -46,13 +53,15 @@ buff = ''
 command.send('show config \n')
 time.sleep(3)
 d = datetime.datetime.today()
+#システム時間を取る
+
 try:
     while not buff.endswith('---つづく---'):
         command.send('\s\n')
         time.sleep(3)
         buff = command.recv(65535)
         if not buff.endswith('#'):
-            Log_Before_Path = config.get('Variable', 'log_before_path') + d.strftime("_%Y-%m-%d-[%H:%M:%S]") + '.log'
+            Log_Before_Path = config.get('Variable', 'log_before_path') + '_' + config.get('Variable', 'console_prompt') + d.strftime("_%Y-%m-%d-[%H:%M:%S]") + '.log'
             b = open(Log_Before_Path,'w')
             b.write(buff)
             b.close()
@@ -61,7 +70,9 @@ except Exception, e:
     print "error info:"+str(e)
 print "本社ルータ作業前config" + Log_Before_Path + "が保存されました。"
 print "config解析作業に入ります......"
-print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+#長いconfigを想定し、---つづく---が表示されたらスペース＆改行で対応、一行の尻部分が#になったら、configが完全に表示したと見なされる
+#表示されたものを作業前ログ(config)として指定の場所に保存
+print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 time.sleep(2)
 check = open(Log_Before_Path,'r')
 tmpdata = check.read()
@@ -75,8 +86,8 @@ else:
     print "対象トンネルは利用可能の状態になっております......"
     time.sleep(2)
     check.close()
+#先ほど保存された作業前ログを読み込んで、今回追加したいのトンネルが本社側ルータにすでに存在するかどうかをチェック
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-
 check_nat = open(Log_Before_Path, 'r')
 lines = check_nat.readlines()
 check_nat.close()
@@ -85,18 +96,22 @@ for line in lines:
     if line.startswith("ip lan1 nat descriptor "):
         nat_config = line[:-1]
         nat_list_now = nat_config.replace('ip lan1 nat descriptor ', '')
-
+#InterfaceにNATを適用させるためのconfig処理が少々特殊で、個別対応が必要、まず該当configを特定する
 if nat_list_now:
         print "既存nat descriptor特定しました、追加いたします......"
         time.sleep(1)
 else:
         print "既存nat descriptor特定できませんでした、新規追加いたします......"
         time.sleep(1)
+#特定できるかどうかのリアクションを入れる
 
 #ip lan1 nat descriptor 5 6 7 8 9 10 14 15 16
 command.send('ip lan1 nat descriptor ' + nat_list_now  + ' ' +  config.get('Variable', 'nat_router_type_num')  + ' ' +  config.get('Variable', 'nat_teletime_type_num')  + ' ' +  config.get('Variable', 'nat_printer_type_num') + '\n')
+#順番が関係ないので、追加したいものを一番最後に付く
 time.sleep(0.5)
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+
+#ここから下は大量のconfigを入れる、スペース要注意
 #ip route 172.25.30.0/24 gateway tunnel 4
 command.send('ip route ' + config.get('Variable', 'ip_network') + config.get('Constant', 'ip_lan1_prefix') + ' gateway tunnel ' + config.get('Variable', 'tunnel_num') + '\n')
 #tunnel select 4
@@ -156,10 +171,10 @@ print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 output = command.recv(65535)
 #今まで入力した内容を受信
 print output
-Log_Path = config.get('Variable', 'log_add_path') + d.strftime("_%Y-%m-%d-[%H:%M:%S]") + '.log'
+Log_Path = config.get('Variable', 'log_add_path') + '_' + config.get('Variable', 'console_prompt') + d.strftime("_%Y-%m-%d-[%H:%M:%S]") + '.log'
 f = open(Log_Path,'w')
 f.write(output)
-#指定の場所にログとして保存
+#指定の場所に今回の作業内容をログとして保存
 print "-------------------------------------------------------------------------------------"
 print "今回の作業履歴を" + Log_Path + "に保存しました。"
 print "-------------------------------------------------------------------------------------"
@@ -175,7 +190,7 @@ try:
         time.sleep(3)
         buff_a = command.recv(65535)
         if not buff_a.endswith('#'):
-            Log_After_Path = config.get('Variable', 'log_after_path') + d.strftime("_%Y-%m-%d-[%H:%M:%S]") + '.log'
+            Log_After_Path = config.get('Variable', 'log_after_path') + '_' + config.get('Variable', 'console_prompt') + d.strftime("_%Y-%m-%d-[%H:%M:%S]") + '.log'
             z = open(Log_After_Path,'w')
             z.write(buff_a)
             z.close()
@@ -185,6 +200,7 @@ except Exception, e:
 print "-------------------------------------------------------------------------------------"
 print "本社ルータ作業後config" + Log_After_Path + "が保存されました。"
 print "-------------------------------------------------------------------------------------"
+#指定の場所に作業後configをログとして保存
 
 ssh_client.close()
 #開けっ放しにしないよう

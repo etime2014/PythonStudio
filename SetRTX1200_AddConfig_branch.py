@@ -6,7 +6,7 @@
 #ルータ側は事前にSSH設定を済んで、lan3にIPを設定し、SSHリモート可能の状態に設置してください
 #ユーザ情報も手動でコンフィグを入れてください
 #下記は例です
-#ip lan3 address 192.168.0.19/24
+#ip lan3 address 192.168.0.19/23
 #ip route 172.31.102.0/24 gateway 192.168.0.5
 #administrator password *
 #login user test *
@@ -25,14 +25,17 @@ import datetime
 config = ConfigParser.ConfigParser()
 config.read('./SetRTX1200_Config_parameter_test.ini')
 #パラメータファイルを読み込む
+#ファイル名とパスを変更したの場合、必ずこちらも更新してください
+
 
 ssh_ip = config.get('Variable', 'ip_lan3')
 username = config.get('Variable', 'username')
 password = config.get('Constant', 'password')
+#SSH資格情報読み込む
 
 ssh_client = paramiko.SSHClient()
 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
+#未知のSSH-host-keyを自動追加
 
 try :
     ssh_client.connect(hostname=ssh_ip,username=username,password=password)
@@ -45,13 +48,17 @@ except Exception, e:
     ssh_client.close()
 else:
     print "Sucessfully login to ", ssh_ip
-
+#SSH資格情報チェック
 
 command = ssh_client.invoke_shell()
+#ssh-shell定義
 command.settimeout(10)
+
 #adminpw = getpass.getpass("administrator PW for %s: " % ssh_ip)
+#こちらを有効すれば、パラメータファイルからadminpwを読み込むではなく、実行時に毎回adminpwを聞いてくれる
 adminpw = config.get('Constant', 'admin_pw')
 
+#ここから下、毎回同じ内容のconfigを入力する
 command.send("administrator\n")
 time.sleep(0.5)
 command.send("%s\n" % adminpw)
@@ -101,7 +108,9 @@ command.send("dhcp server rfc2131 compliant except remain-silent\n")
 command.send("dns private address spoof on\n")
 time.sleep(0.5)
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-#ここからカスタマイズエリア,parameter.iniを使う
+
+#ここから下はカスタマイズエリア,parameter.iniを使って毎回変わるものを入力
+#新たに追加時、コマンド内のスペースを注意してください
 #command.send("console prompt paqua-wakayama\n")
 command.send('console prompt ' + config.get('Variable', 'console_prompt') + '\n')
 #command.send("ip lan1 address 172.25.32.1/24\n")
@@ -144,20 +153,20 @@ time.sleep(0.5)
 command.send('ip route default gateway pp ' + config.get('Constant', 'pp_num') + ' filter 1040 1041 gateway tunnel ' + config.get('Variable', 'tunnel_num') + '\n')
 time.sleep(2)
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-#command.send("no ip route 192.168.0.0/24 gateway 192.168.0.5\n")
-#command.send('no ip route ' + config.get('General', 'default_route_intra') + '\n')
-#command.send("no ip lan3 address 192.168.0.12/24\n")
-#command.send('no ip lan3 address ' + config.get('General', 'ip_lan3') + config.get('General', 'ip_lan3_prefix')  + '\n')
-#SSH維持のため、自動削除できませんでした
 command.send('save' + '\n')
 time.sleep(1.5)
+
 d = datetime.datetime.today()
+#システム時間を取る
+
 output = command.recv(65535)
 #今まで入力した内容を受信
-Log_Path = config.get('Variable', 'branch_log_path') + d.strftime("_%Y-%m-%d-[%H:%M:%S]") + '.log'
+Log_Path = config.get('Variable', 'branch_log_path') + '_' + config.get('Variable', 'console_prompt') + d.strftime("_%Y-%m-%d-[%H:%M:%S]") + '.log'
 f = open(Log_Path,'w')
 f.write(output)
 #指定の場所にログとして保存
+
+#今回の作業内容を出力
 print output
 print "-------------------------------------------------------------------------------------"
 print Log_Path + "が保存されました。"
